@@ -1,8 +1,9 @@
 var Cheese = require('./cheese.model');
+var auth = require('./auth-middleware');
 
 module.exports = function(app) {
   // create a cheese
-  app.post('/api/v1/cheeses', function(request, response, next) {
+  app.post('/api/v1/cheeses', auth, function(request, response, next) {
     try {
       var cheese = new Cheese({
         name: request.fields.name,
@@ -22,15 +23,20 @@ module.exports = function(app) {
 
   // get all cheeses
   app.get('/api/v1/cheeses', async function(request, response, next) {
+    var limit = parseInt(request.query.limit) || 5;
+    var offset = parseInt(request.query.offset) || 0;
+
     try {
-      var results = [];
-      results = await Cheese.find();
+      var results = await Cheese.find().limit(limit).skip(offset);
+      var count = (await Cheese.find()).length;
+
+      var baseUrl = `${request.protocol}://${request.hostname}${ request.hostname == "localhost" ? ":" + process.env.PORT : "" }${ request._parsedUrl.pathname }`
 
       response.json({
-        count: results.lenght,
-        next: `${request.protocol}://${request.hostname}${ request.hostname == "localhost" ? ":" + process.env.PORT : "" }${ request.url }?offset=20`,
-        previous: null,
-        url: `${request.protocol}://${request.hostname}${ request.hostname == "localhost" ? ":" + process.env.PORT : "" }${ request.url }`,
+        count,
+        next: offset + limit >= count ? null : baseUrl + "+limit=" + limit + "&offset=" + (offset + limit),
+        previous: limit < 0 ? null : baseUrl + "+limit=" + limit + "&offset=" + (offset - limit),
+        url: `${baseUrl}?limit=${limit}&offset?${offset}`,
         results 
       });
 
@@ -57,7 +63,7 @@ module.exports = function(app) {
   });
 
   // update a cheese
-  app.patch('/api/v1/cheeses/:id', async function(request, response, next) {
+  app.patch('/api/v1/cheeses/:id', auth, async function(request, response, next) {
     try {
       var { name, price, weight, strength, brand } = request.fields;
       var updateObject = {};
@@ -80,7 +86,7 @@ module.exports = function(app) {
   });
 
   // delete a single cheese
-  app.delete('/api/v1/cheeses/:id', async function(request, response, next) {
+  app.delete('/api/v1/cheeses/:id', auth, async function(request, response, next) {
     try {
       await Cheese.findByIdAndRemove(request.params.id);
       response.status(204);
