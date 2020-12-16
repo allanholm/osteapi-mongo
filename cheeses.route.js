@@ -34,8 +34,8 @@ module.exports = function(app) {
 
       response.json({
         count,
-        next: offset + limit >= count ? null : baseUrl + "+limit=" + limit + "&offset=" + (offset + limit),
-        previous: limit < 0 ? null : baseUrl + "+limit=" + limit + "&offset=" + (offset - limit),
+        next: offset + limit >= count ? null : baseUrl + "?limit=" + limit + "&offset=" + (offset + limit),
+        previous: limit < 0 ? null : baseUrl + "?limit=" + limit + "&offset=" + (offset - limit),
         url: `${baseUrl}?limit=${limit}&offset?${offset}`,
         results 
       });
